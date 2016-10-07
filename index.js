@@ -9,6 +9,8 @@ var assign   = require('lodash/assign');
 var keys     = require('lodash/keys');
 var partial  = require('lodash/partial');
 
+var SVGO     = require('svgo');
+
 function readTemplate (callback, filepath) {
     fs.readFile(filepath, 'utf8', function (error, contents) {
         if (error) {
@@ -20,7 +22,17 @@ function readTemplate (callback, filepath) {
 
 function parseXml (callback, source) {
     var xmlParser = new xml2js.Parser();
-    xmlParser.parseString(source, callback);
+
+    var svgo = new SVGO();
+    svgo.optimize(source, function(result) {
+        if (result.error) {
+            console.log('SVGO failed', result.error);
+            // fall back on source
+            xmlParser.parseString(source, callback);
+        }else{
+            xmlParser.parseString(result.data, callback);
+        }
+    });
 }
 
 function renderJsx (opts, callback, error, xml) {
